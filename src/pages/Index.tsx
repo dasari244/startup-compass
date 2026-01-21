@@ -1,26 +1,29 @@
 import { useState } from "react";
 import { IdeaForm } from "@/components/IdeaForm";
-import { AnalysisResults } from "@/components/AnalysisResults";
+import { AnalysisDisplay } from "@/components/AnalysisDisplay";
 import { LoadingState } from "@/components/LoadingState";
-import { generateMockAnalysis } from "@/utils/mockAnalysis";
-import { StartupAnalysis } from "@/types/analysis";
+import { analyzeIdea } from "@/services/analysisApi";
 import { Zap } from "lucide-react";
+import { toast } from "sonner";
 
 type AppState = "idle" | "loading" | "results";
 
 const Index = () => {
   const [state, setState] = useState<AppState>("idle");
-  const [analysis, setAnalysis] = useState<StartupAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<string | null>(null);
 
   const handleAnalyze = async (idea: string) => {
     setState("loading");
     
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 2500));
-    
-    const result = generateMockAnalysis(idea);
-    setAnalysis(result);
-    setState("results");
+    try {
+      const result = await analyzeIdea(idea);
+      setAnalysis(result.analysis);
+      setState("results");
+    } catch (error) {
+      console.error("Analysis failed:", error);
+      toast.error("Failed to analyze idea. Please try again.");
+      setState("idle");
+    }
   };
 
   const handleReset = () => {
@@ -97,7 +100,7 @@ const Index = () => {
           {state === "loading" && <LoadingState />}
 
           {state === "results" && analysis && (
-            <AnalysisResults analysis={analysis} onReset={handleReset} />
+            <AnalysisDisplay analysis={analysis} onReset={handleReset} />
           )}
         </main>
 
